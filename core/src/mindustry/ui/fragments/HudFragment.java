@@ -44,6 +44,8 @@ public class HudFragment{
     private static final float dsize = 78f, pauseHeight = 36f;
 
     public final PlacementFragment blockfrag = new PlacementFragment();
+    public final PanelFragment panelfragment = new PanelFragment();
+    public final ControlPanelUnit controlfragment = new ControlPanelUnit();
     public boolean shown = true;
 
     private ImageButton flip;
@@ -118,9 +120,19 @@ public class HudFragment{
             t.visible(() -> shown && Core.settings.getBool(("minimap"))); // FINISHME: Only hide minimap when doing so, use a collapser to shrink it maybe? Idk
             t.name = "minimap/position";
             //tile hud
-            t.add(new TileInfoFragment()).name("tilehud").top();
-            //minimap
-            t.add(new Minimap()).name("minimap").top();
+            t.table(ta -> {
+                if(Core.settings.getBool("historyfragment")) {
+                    ta.add(new HistoryInfoFragment()).name("log").top().right().maxWidth(500f);
+                }
+                else{
+                    if(Core.settings.getBool("tilefragment")) {
+                        ta.add(new TileInfoFragment()).name("tilehud").top();
+                    }
+                }
+                //ta.add(new TileInfoFragment()).name("tilehud").top();
+                //minimap
+                ta.add(new Minimap()).name("minimap").top();
+            });
             t.row();
             //position
             t.label(() -> player.tileX() + ", " + player.tileY() + "\n" + "[coral]" + World.toTile(Core.input.mouseWorldX()) + ", " + World.toTile(Core.input.mouseWorldY()))
@@ -130,6 +142,28 @@ public class HudFragment{
                 .name("position").top().right().labelAlign(Align.right)
                 .colspan(2);
             t.top().right();
+            t.row();
+            t.table(tt->{
+                ImageButtonStyle sstyle = Styles.cleari;
+                tt.defaults().size(30f);
+                tt.button(Icon.refreshSmall, sstyle, () -> {
+                    Call.sendChatMessage("/sync");
+                }).name("sync").tooltip("/sync");
+
+                tt.button(Icon.powerSmall, sstyle, () -> {
+                    String message = "!fixpower c";
+                    CommandHandler.CommandResponse response = ClientVars.clientCommandHandler.handleMessage(message, player);
+                }).name("fixpower").tooltip("fixpower");
+
+                tt.button(Icon.unitsSmall, sstyle, () -> {
+                    String message = "!uc " + UnitTypes.mega.localizedName;
+                    ClientVars.clientCommandHandler.handleMessage(message, player);
+                }).name("mega").tooltip("mega");
+            }).right();
+            if(Core.settings.getBool("historyfragment")) {
+                t.row();
+                t.add(new TileInfoFragment()).name("tilehud").top().right();
+            }
         });
 
         ui.hints.build(parent);
@@ -268,6 +302,7 @@ public class HudFragment{
                     modeIcon(st, () -> AutoTransfer.enabled, () -> AutoTransfer.enabled ^= true, Icon.resize.tint(1, 0.33f, 1, a), "Auto Transfer", Binding.toggle_auto_target, "Shift");
                     modeIcon(st, () -> dispatchingBuildPlans, () -> dispatchingBuildPlans ^= true, Icon.tree.tint(1, 1, 1, a), "Sending Build Plans", Binding.send_build_queue);
                     modeIcon(st, () -> Navigation.currentlyFollowing != null, Navigation::stopFollowing, Icon.android.tint(Color.cyan.cpy().a(a)), "Navigating", Binding.stop_following_path);
+                    modeIcon(st, () -> hidingFog, () -> {Vars.state.rules.fog ^= true; hidingFog =!hidingFog;}, new TextureRegionDrawable(Icon.waves.getRegion()), "Hide Fog", Binding.hide_fog);
                 }).marginTop(3).marginBottom(3).growX().get();
             }
 
@@ -496,6 +531,8 @@ public class HudFragment{
             });
 
         blockfrag.build(parent);
+        panelfragment.build(parent);
+        controlfragment.build(parent);
     }
 
     public void modeIcon(Table table, Boolp cond, Runnable toggle, Drawable icon, String text, Binding binding){

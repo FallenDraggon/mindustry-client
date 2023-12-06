@@ -82,7 +82,9 @@ object Client {
     }
 
     fun draw() {
-        Navigation.draw()
+        if(Core.settings.getBool("shownivigationpath")) {
+            Navigation.draw()
+        }
         Spectate.draw()
         autoTransfer.draw()
 

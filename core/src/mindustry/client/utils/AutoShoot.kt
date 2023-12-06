@@ -56,10 +56,12 @@ fun autoShoot() {
         if (type.canAttack) {
             val ignoreDisarmed = Server.io()
             target = Units.closestEnemy(unit.team, unit.x, unit.y, unit.range()) { u -> !(ignoreDisarmed && u.disarmed) && u.checkTarget(type.targetAir, unit.type.targetGround) }
+            if(Core.settings.getBool("ignoreunit")){target = null }
         }
         if (type.canHeal && target == null) {
             target = Units.findDamagedTile(Vars.player.team(), Vars.player.x, Vars.player.y)
             if (target != null && !unit.within(target, if (type.hasWeapons()) unit.range() + 4 + (target as Building).hitSize()/2f else 0f)) target = null
+            if(Core.settings.getBool("ignoreheal")){target = null }
         }
 
         if (target == null && (type == UnitTypes.block || type.canAttack)) {
@@ -67,7 +69,39 @@ fun autoShoot() {
                 if (CustomMode.flood()) Units.findEnemyTile(Vars.player.team(), Vars.player.x, Vars.player.y, unit.range()) { type.targetGround } // Shoot buildings in flood because why not
                 else Vars.indexer.findEnemyTile(Vars.player.team(), Vars.player.x, Vars.player.y, unit.range(), true) { it is ShockMine.ShockMineBuild }
         }
-        if (!CustomMode.flood() && (unit as? BlockUnitc)?.tile()?.block == Blocks.foreshadow) {
+        //if (!CustomMode.flood() && (unit as? BlockUnitc)?.tile()?.block == Blocks.foreshadow) {
+        if (!CustomMode.flood() && !unit.dead && (target == null)) {
+            val amount = unit.range() * 2 + 1
+            var closestScore = Float.POSITIVE_INFINITY
+
+            circle(Vars.player.tileX(), Vars.player.tileY(), unit.range()) { tile ->
+                tile ?: return@circle
+                if (!tile.team().isEnemy(Vars.player.team())) return@circle
+                val block = tile.block()
+                val scoreMul = when {
+                    block == Blocks.air -> 10f // Most blocks are air, checking for air first should be slightly faster
+                    // do NOT shoot power voided networks
+                    (tile.build?.power?.graph?.getPowerBalance() ?: 0f) <= -1e12f -> 1000f
+                    // otherwise nodes are good to shoot
+                    block == Blocks.powerSource -> 0f
+                    block is PowerNode -> if (tile.build.power.status < .9) 2f else 1f
+
+                    block == Blocks.liquidSource && (tile.build as LiquidSourceBuild).config() == Liquids.oil -> 1f
+
+                    block is BaseTurret -> 7f
+
+                    else -> blockMul.get(block, 9f) // Map is faster
+                }
+
+                var score = Astar.manhattan.cost(tile.x.toInt(), tile.y.toInt(), Vars.player.tileX(), Vars.player.tileY())
+                score += scoreMul * amount * if (tile.build?.proximity?.contains { it is BaseTurret.BaseTurretBuild } == true) 1F else 1.3F
+
+                if (score < closestScore) {
+                    target = tile.build
+                    closestScore = score
+                }
+            }
+        }else if (!CustomMode.flood() && (unit as? BlockUnitc)?.tile()?.block == Blocks.foreshadow) {
             val amount = unit.range() * 2 + 1
             var closestScore = Float.POSITIVE_INFINITY
 

@@ -7,6 +7,7 @@ import mindustry.Vars.*
 import mindustry.client.*
 import mindustry.client.antigrief.*
 import mindustry.client.navigation.*
+import mindustry.client.ui.TrashDialog
 import mindustry.gen.*
 import mindustry.world.blocks.logic.*
 import mindustry.world.blocks.logic.LogicBlock.*
@@ -46,6 +47,12 @@ object ProcessorPatcher {
     private fun isAttem(code: String) = attemMatcher.containsMatchIn(code)
 
     fun patch(code: String, mode: FixCodeMode): String {
+        if((Core.settings.getBool("ihateattems")) && TrashDialog.ihateattems(code)){
+            return when (mode) {
+                FixCodeMode.Remove -> attemText
+                else -> code
+            }
+        }
         val result = attemMatcher.find(code) ?: return code
 
         return when (mode) {

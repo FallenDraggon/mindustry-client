@@ -671,6 +671,10 @@ public class Control implements ApplicationListener, Loadable{
                     else ui.consolefrag.setShown(false);
                 }else if(ui.listfrag.shown()){
                     ui.listfrag.toggle();
+                }else if(ui.listblockfrag.shown()){
+                    ui.listblockfrag.toggle();
+                }else if(ui.findfrag.shown()){
+                    ui.findfrag.toggle();
                 }else if(!ui.paused.isShown() && !scene.hasDialog()){
                     ui.paused.show();
                     if(!net.active()){
@@ -679,9 +683,7 @@ public class Control implements ApplicationListener, Loadable{
                 }
             }
 
-            if(!mobile && Core.input.keyTap(Binding.screenshot) && !scene.hasField() && !scene.hasKeyboard()){
-                renderer.takeMapScreenshot();
-            }
+            //if(!mobile && Core.input.keyTap(Binding.screenshot) && !scene.hasField() && !scene.hasKeyboard()){renderer.takeMapScreenshot();}
 
         }else{
             //this runs in the menu

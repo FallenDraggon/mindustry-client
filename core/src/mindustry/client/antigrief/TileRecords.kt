@@ -8,6 +8,7 @@ import mindustry.ai.types.*
 import mindustry.client.*
 import mindustry.client.utils.*
 import mindustry.content.*
+import mindustry.core.ActionsHistory
 import mindustry.game.*
 import mindustry.gen.*
 import mindustry.world.*
@@ -17,6 +18,8 @@ import kotlin.math.*
 
 object TileRecords {
     private var records: Array<Array<TileRecord>> = arrayOf(arrayOf())
+    var reslogs: Array<Array<TileRecord>> = arrayOf(arrayOf())
+    var history: ArrayList<String> = arrayListOf()
     var joinTime: Instant = Instant.EPOCH
 
     fun initialize() {
@@ -31,15 +34,18 @@ object TileRecords {
             if (!ClientVars.syncing && !sameMap) {
                 records = Array(Vars.world.width()) { x -> Array(Vars.world.height()) { y -> TileRecord(x, y) } }
                 joinTime = Instant.now()
+                ActionsHistory.clearactionhistory()
             }
         }
 
         Events.on(EventType.BlockBuildBeginEventBefore::class.java) {
             if (it.newBlock == null || it.newBlock == Blocks.air) {
+                if(it.unit.isPlayer) addLogH(TileBreakLog(it.tile, it.unit.toInteractor(), it.tile.block()))
                 it.tile.getLinkedTiles { tile ->
                     addLog(tile, TileBreakLog(tile, it.unit.toInteractor(), tile.block()))
                 }
             } else { // FINISHME: slightly very inefficient?
+                if(it.unit.isPlayer) addLogH(TilePlacedLog(it.tile, it.unit.toInteractor(), it.newBlock, -1, null, it.tile == it.tile))
                 it.tile.getLinkedTilesAs(it.newBlock) { tile ->
                     val log = TilePlacedLog(tile, it.unit.toInteractor(),
                         it.newBlock, -1, null, tile == it.tile)
@@ -61,6 +67,7 @@ object TileRecords {
 
         Events.on(EventType.ConfigEventBefore::class.java) {
             if (it.player != null) Seer.blockConfig(it.player, it.tile.tile, it.value)
+            addLogH(ConfigureTileLog(it.tile.tile, it.player.toInteractor(), it.tile.tile.block(), it.tile.rotation, it.value))
             it.tile.tile.getLinkedTiles { tile ->
                 addLog(tile, ConfigureTileLog(tile, it.player.toInteractor(), tile.block(), it.tile.rotation, it.value))
             }
@@ -105,8 +112,15 @@ object TileRecords {
         Events.on(EventType.BuildRotateEvent::class.java) {
             val player = it.unit?.player ?: return@on
             val direction = rotationDirection(it.previous, it.build.rotation)
+            if(it.unit.player != null) addLogH(RotateTileLog(it.build.tile, it.unit.player.toInteractor(), it.build.block, it.build.rotation, direction))
             it.build.tile.getLinkedTiles { tile ->
                 addLog(tile, RotateTileLog(tile, player.toInteractor(), it.build.block, it.build.rotation, direction))
+            }
+        }
+        Events.on(EventType.BuildingCommandEvent::class.java) {
+            //if(it.player != null) addLogH(CommandTileLog(it.building.tile, it.player.toInteractor(), it.building.block, it.position))
+            it.building.tile.getLinkedTiles { tile ->
+                addLog(tile, CommandTileLog(tile, it.player.toInteractor(), it.building.block, it.position))
             }
         }
     }
@@ -119,7 +133,34 @@ object TileRecords {
         val logs = this[tile] ?: return
         logs.add(log, tile)
     }
-
+    private fun addLogH(log: TileLog) {
+        addHistoryLog(log)
+    }
+    private fun addHistoryLog(log: TileLog){
+        //if(log.toShortString().contains(Core.bundle.get("client.destroyed"))){return}
+        if(history.size>7){
+            history.removeAt(0)
+        }
+        //var i = 0;
+        var done = false;
+        if(history.size>0)
+            for (i in 0..(history.size-1)){
+                if(history[i].startsWith(log.toShortString())){
+                    var nya = history[i].substring(log.toShortString().length+2);
+                    var neko = 0;
+                    try{
+                        neko = Integer.parseInt(nya)+1
+                    }
+                    catch (e: NumberFormatException){}
+                    history[i] = log.toShortString()+" x" + neko
+                    //player.sendMessage("nya^ " + nya + "  neko^ " + neko)
+                    done=true;
+                }
+            }
+        if(!done) {
+            history.add(log.toShortString() + " x1");
+        }
+    }
     fun show(tile: Tile) {
         dialog("Logs") {
             cont.add(TileRecords[tile]?.toElement())

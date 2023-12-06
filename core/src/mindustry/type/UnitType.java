@@ -537,6 +537,10 @@ public class UnitType extends UnlockableContent implements Senseable{
             for(Ability ability : unit.abilities){
                 ability.displayBars(unit, bars);
             }
+            if(unit.shield != 0f){
+                bars.add(new Bar(Mathf.ceil(unit.shield*10f)/10f + "", Pal.darkestGray, () -> unit.shield / unit.shield).blink(Color.white));
+                bars.row();
+            }
 
             if(payloadCapacity > 0 && unit instanceof Payloadc payload){
                 bars.add(new Bar("stat.payloadcapacity", Pal.items, () -> payload.payloadUsed() / unit.type().payloadCapacity));
@@ -563,7 +567,12 @@ public class UnitType extends UnlockableContent implements Senseable{
             }
         }else if(net.active() && unit.lastCommanded != null){
             table.row();
+            table.label(()->Iconc.settings + " " + (long)unit.flag).color(Color.lightGray).left().padLeft(5);
+            table.row();
             table.add(Core.bundle.format("lastcommanded", unit.lastCommanded)).growX().wrap().left();
+        } else {
+            table.row();
+            table.label(()->Iconc.settings + " " + (long)unit.flag).color(Color.lightGray).left().padLeft(5);
         }
 
         table.row();

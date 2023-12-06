@@ -98,8 +98,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     @Nullable private static ChatFragment.ChatMessage commandWarning;
 
     //for RTS controls
-    public Seq<Unit> selectedUnits = new Seq<>();
-    public Seq<Building> commandBuildings = new Seq<>(false);
+    public static Seq<Unit> selectedUnits = new Seq<>();
+    public static Seq<Building> commandBuildings = new Seq<>(false);
     public boolean commandMode = false;
     public boolean commandRect = false;
     public boolean tappedOne = false;
@@ -878,6 +878,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(commandMode){
             Unit unit = selectedCommandUnit(input.mouseWorldX(), input.mouseWorldY());
             if(unit != null){
+                last_select_units_type = unit.type;
                 selectedUnits.clear();
                 camera.bounds(Tmp.r1);
                 selectedUnits.addAll(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height, u -> u.type == unit.type));
@@ -892,6 +893,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             Unit unit = selectedCommandUnit(input.mouseWorldX(), input.mouseWorldY());
             Building build = world.buildWorld(input.mouseWorldX(), input.mouseWorldY());
             if(unit != null){
+                last_select_units_type = unit.type;
                 if(!selectedUnits.contains(unit)){
                     selectedUnits.add(unit);
                 }else{
@@ -1262,6 +1264,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Tmp.r1.set(result.x, result.y, result.x2 - result.x, result.y2 - result.y);
 
         Draw.color(Pal.remove);
+        drawSizeSelect(x1, y1, x2, y2, maxLength);
         Lines.stroke(1f);
 
         for(var plan : player.unit().plans()){
@@ -1313,7 +1316,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     protected void drawSelection(int x1, int y1, int x2, int y2, int maxLength, Color col1, Color col2){
         NormalizeDrawResult result = Placement.normalizeDrawArea(Blocks.air, x1, y1, x2, y2, false, maxLength, 1f);
-
+        drawSizeSelect(x1, y1, x2, y2, maxLength);
         if(Core.settings.getBool("drawselectionvanilla")){
             Lines.stroke(2f);
             Draw.color(col1);
@@ -1325,7 +1328,15 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             Fill.crect(result.x, result.y, result.x2 - result.x, result.y2 - result.y);
         }
     }
-
+    // drawing size selection
+    public void drawSizeSelect(int x1, int y1, int x2, int y2, int maxLength) {
+        String x = getSizeSelect(Math.abs(x1 - x2), maxLength);
+        String y = getSizeSelect(Math.abs(y1 - y2), maxLength);
+        ui.showLabel(x + ", " + y, 0.02f, x2 * tilesize, y2 * tilesize - 16f);
+    }
+    public  String getSizeSelect(int size, int maxLength) {
+        return ++size >= maxLength ? "[accent]" + maxLength + "[]" : String.valueOf(size);
+    }
     protected void flushSelectPlans(Seq<BuildPlan> plans){
         for(BuildPlan plan : plans){
             if(plan.block != null && validPlace(plan.x, plan.y, plan.block, plan.rotation)){
@@ -2200,5 +2211,14 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     static class PlaceLine{
         public int x, y, rotation;
         public boolean last;
+    }
+    public static void selectUnitsType(UnitType seltype) {
+        selectedUnits.clear();
+        commandBuildings.clear();
+        for(var unit : player.team().data().units){
+            if(unit.isCommandable()&&(unit.type == seltype)){
+                selectedUnits.add(unit);
+            }
+        }
     }
 }

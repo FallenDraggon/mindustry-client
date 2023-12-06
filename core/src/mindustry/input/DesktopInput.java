@@ -25,6 +25,7 @@ import mindustry.client.navigation.*;
 import mindustry.client.navigation.waypoints.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
+import mindustry.content.UnitTypes;
 import mindustry.core.*;
 import mindustry.entities.*;
 import mindustry.entities.units.*;
@@ -32,10 +33,12 @@ import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
+import mindustry.type.UnitType;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.ui.fragments.*;
 import mindustry.world.*;
+import mindustry.world.blocks.ControlBlock;
 import mindustry.world.blocks.logic.*;
 import mindustry.world.blocks.payloads.*;
 
@@ -52,6 +55,10 @@ public class DesktopInput extends InputHandler{
     public int selectX = -1, selectY = -1, schemX = -1, schemY = -1;
     /** Last known line positions.*/
     public int lastLineX, lastLineY, schematicX, schematicY;
+    public float sniperX = 0, sniperY = 0;
+    public @Nullable Teamc target;
+    public Vec2 targetPos = new Vec2();
+    public @Nullable Position payloadTarget;
     /** Whether selecting mode is active. */
     public PlaceMode mode;
     /** Animation scale for line. */
@@ -115,6 +122,15 @@ public class DesktopInput extends InputHandler{
                         }
                         if(showingMassDrivers){
                             str.append("\n").append(bundle.format("client.togglemassdrivers", keybinds.get(Binding.show_massdriver_configs).key.toString()));
+                        }
+                        if(playersblockplanshow){
+                            str.append("\n").append(bundle.format("client.showplblplan", keybinds.get(Binding.block_show_plans).key.toString()));
+                        }
+                        if(playersdeathplanshow){
+                            str.append("\n").append(bundle.format("client.showdeathlplan", keybinds.get(Binding.death_show_plans).key.toString()));
+                        }
+                        if(playersdeathcontrolplanshow){
+                            str.append("\n").append(bundle.format("client.showdeathcontrollplan", keybinds.get(Binding.death_show_plans).key.toString()));
                         }
                         if(hidingBlocks){
                             str.append("\n").append(bundle.format("client.toggleblocks", keybinds.get(Binding.hide_blocks).key.toString()));
@@ -314,6 +330,9 @@ public class DesktopInput extends InputHandler{
         if(Core.input.keyTap(Binding.player_list) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
             ui.listfrag.toggle();
         }
+        if(Core.input.keyTap(Binding.screenshot) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
+            ui.listblockfrag.toggle();
+        }
 
         conveyorPlaceNormal = input.keyDown(Binding.toggle_placement_modifiers);
 
@@ -342,6 +361,11 @@ public class DesktopInput extends InputHandler{
             else hidingUnits = !hidingUnits;
         }
 
+        if(input.keyTap(Binding.hide_fog) && scene.getKeyboardFocus() == null){
+            Vars.state.rules.fog = !Vars.state.rules.fog;
+            hidingFog = Vars.state.rules.fog;
+        }
+
         if(input.keyTap(Binding.show_reactor_and_dome_ranges)){
             settings.put("showreactors", !settings.getBool("showreactors"));
             settings.put("showdomes", !settings.getBool("showdomes"));
@@ -367,6 +391,17 @@ public class DesktopInput extends InputHandler{
             Navigation.stopFollowing();
         }
 
+        if(input.keyTap(Binding.block_show_plans) && scene.getKeyboardFocus() == null){
+            playersblockplanshow = !playersblockplanshow;
+        }
+        if(input.keyTap(Binding.death_show_plans) && scene.getKeyboardFocus() == null){
+            if (input.shift()) {
+                playersdeathcontrolplanshow = !playersdeathcontrolplanshow;
+            } else {
+                playersdeathplanshow = !playersdeathplanshow;
+            }
+        }
+
         if(input.keyTap(Binding.auto_build) && scene.getKeyboardFocus() == null){
             if(input.shift()) {
                 var plans = player.unit().plans;
@@ -380,7 +415,10 @@ public class DesktopInput extends InputHandler{
         }
 
         if(input.keyTap(Binding.auto_repair) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){
-            Navigation.follow(new RepairPath());
+            Navigation.follow(new RepairPath(), true);
+        }
+        if(input.keyTap(Binding.sniper_mode) && scene.getKeyboardFocus() == null){
+            Core.settings.put("snipermode", !Core.settings.getBool("snipermode"));
         }
 
         if(input.keyTap(Binding.auto_mine) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.mineTier > 0))){
@@ -434,13 +472,24 @@ public class DesktopInput extends InputHandler{
             panning = true;
         }
 
-        if(input.keyDown(Binding.freecam_modifier) && (input.axis(Binding.move_x) != 0f || input.axis(Binding.move_y) != 0f) && scene.getKeyboardFocus() == null){
-            panning = true;
-            Spectate.INSTANCE.setPos(null);
-            float speed = Time.delta;
-            speed *= camera.width;
-            speed /= 75f;
-            camera.position.add(input.axis(Binding.move_x) * speed, input.axis(Binding.move_y) * speed);
+        if(Core.settings.getBool("mobilegayming")){
+            if((input.axis(Binding.move_x) != 0f || input.axis(Binding.move_y) != 0f) && scene.getKeyboardFocus() == null){
+                panning = true;
+                Spectate.INSTANCE.setPos(null);
+                float speed = Time.delta;
+                speed *= camera.width;
+                speed /= 75f;
+                camera.position.add(input.axis(Binding.move_x) * speed, input.axis(Binding.move_y) * speed);
+            }
+        } else {
+            if(input.keyDown(Binding.freecam_modifier) && (input.axis(Binding.move_x) != 0f || input.axis(Binding.move_y) != 0f) && scene.getKeyboardFocus() == null){
+                panning = true;
+                Spectate.INSTANCE.setPos(null);
+                float speed = Time.delta;
+                speed *= camera.width;
+                speed /= 75f;
+                camera.position.add(input.axis(Binding.move_x) * speed, input.axis(Binding.move_y) * speed);
+            }
         }
 
         if(Core.settings.getBool("returnonmove") && ((!input.keyDown(Binding.freecam_modifier) && (Math.abs(Core.input.axis(Binding.move_x)) > 0 || Math.abs(Core.input.axis(Binding.move_y)) > 0)) || input.keyDown(Binding.mouse_move)) && !scene.hasField()){
@@ -454,8 +503,11 @@ public class DesktopInput extends InputHandler{
             mode = none;
         }
 
-        if (input.keyDown(Binding.find_modifier) && input.keyRelease(Binding.find)) {
+        if (input.keyDown(Binding.find_modifier) && !input.keyDown(Binding.boost) &&  input.keyRelease(Binding.find)) {
             FindDialog.INSTANCE.show();
+        }
+        if (input.keyDown(Binding.find_modifier) && input.keyDown(Binding.boost) && input.keyRelease(Binding.find)) {
+            ui.findfrag.toggle();
         }
 
         if(!locked){
@@ -515,6 +567,24 @@ public class DesktopInput extends InputHandler{
                 }
             }
         }
+        if(commandMode && input.keyTap(Binding.select_last_units) && !scene.hasField() && !scene.hasDialog()){
+            selectedUnits.clear();
+            commandBuildings.clear();
+            for(var unit : player.team().data().units){
+                if(unit.isCommandable() && unit.type == last_select_units_type){
+                    selectedUnits.add(unit);
+                }
+            }
+        }
+        if(commandMode && input.keyTap(Binding.select_combat_units) && !scene.hasField() && !scene.hasDialog()){
+            selectedUnits.clear();
+            commandBuildings.clear();
+            for(var unit : player.team().data().units){
+                if(unit.isCommandable()&&(unit.type != UnitTypes.mega)&&(unit.type != UnitTypes.poly)){
+                    selectedUnits.add(unit);
+                }
+            }
+        }
 
         if(!scene.hasMouse() && !locked){
             // FINISHME: Move this into its own method, its huge
@@ -530,6 +600,12 @@ public class DesktopInput extends InputHandler{
                 try {
                     table.add(cursor.block().localizedName + ": (" + cursor.x + ", " + cursor.y + ")").height(itemHeight).left().growX().fillY().padTop(-5);
                 } catch (Exception e) { ui.chatfrag.addMessage(e.getMessage(), null, Color.scarlet, "", e.getMessage()); }
+
+                table.row().fill();
+                table.button("@client.coordsatchat", () -> { // Cursor at chat
+                    Call.sendChatMessage(cursor.x + ", " + cursor.y);
+                    table.remove();
+                });
 
                 table.row().fill();
                 table.button("@client.log", () -> { // Tile Logs
@@ -624,8 +700,19 @@ public class DesktopInput extends InputHandler{
         }
 
         if(!player.dead() && !state.isPaused() && !scene.hasField() && !locked){
-            updateMovement(player.unit());
-
+            //updateMovement(player.unit());
+            if(Core.settings.getBool("snipermode")){
+                if(Core.input.keyTap(Binding.select) && !Core.scene.hasMouse()){
+                    sniperX = Core.input.mouseWorldX();
+                    sniperY = Core.input.mouseWorldY();
+                }
+                player.unit().lookAt(player.unit().angleTo(sniperX, sniperY));
+                player.unit().aim(sniperX, sniperY);
+                player.shooting = true;
+                player.unit().controlWeapons(player.shooting);
+            }else{
+                if(Core.settings.getBool("mobilegayming")){updateMovementMobile(player.unit());} else {updateMovement(player.unit());}
+            }
             if(Core.input.keyTap(Binding.respawn) && !scene.hasDialog()){
                 controlledType = null;
                 recentRespawnTimer = 1f;
@@ -645,7 +732,7 @@ public class DesktopInput extends InputHandler{
 
         if(state.isMenu() || Core.scene.hasDialog()) return;
 
-        if(input.keyTap(Binding.reset_camera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
+        if(!commandMode && input.keyTap(Binding.reset_camera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
             panning = false;
             Spectate.INSTANCE.setPos(null);
         }
@@ -771,7 +858,9 @@ public class DesktopInput extends InputHandler{
         table.button(Icon.book, Styles.clearNonei, () -> {
             ui.database.show();
         }).tooltip("@database");
-
+        table.button(Icon.units, Styles.clearNonei, () -> {
+            ui.trashbase.show();
+        }).tooltip("@trashbase");
         table.button(Icon.map, Styles.clearNonei, () -> {
             if (state.isCampaign() && !Vars.net.client()) ui.planet.show();
             else MarkerDialog.INSTANCE.show();
@@ -1160,7 +1249,137 @@ public class DesktopInput extends InputHandler{
             }
         }
     }
+    private void updateMovementMobile(Unit unit) {
+        checkTargets(Core.input.mouseWorldX(), Core.input.mouseWorldY());
+        Rect rect = Tmp.r3;
 
+        UnitType type = unit.type;
+        if(type == null) return;
+
+        boolean omni = unit.type.omniMovement;
+        boolean allowHealing = type.canHeal;
+        boolean validHealTarget = allowHealing && target instanceof Building b && b.isValid() && target.team() == unit.team && b.damaged() && target.within(unit, type.range);
+        boolean boosted = (unit instanceof Mechc && unit.isFlying());
+
+        //reset target if:
+        // - in the editor, or...
+        // - it's both an invalid standard target and an invalid heal target
+        if((Units.invalidateTarget(target, unit, type.range) && !validHealTarget) || state.isEditor()){
+            target = null;
+        }
+
+        targetPos.set(Core.camera.position);
+        float attractDst = 15f;
+
+        float speed = unit.speed();
+        float range = unit.hasWeapons() ? unit.range() : 0f;
+        float bulletSpeed = unit.hasWeapons() ? type.weapons.first().bullet.speed : 0f;
+        float mouseAngle = unit.angleTo(unit.aimX(), unit.aimY());
+        boolean aimCursor = omni && player.shooting && type.hasWeapons() && !boosted && type.faceTarget;
+
+        if(aimCursor){
+            unit.lookAt(mouseAngle);
+        }else{
+            unit.lookAt(unit.prefRotation());
+        }
+
+        //validate payload, if it's a destroyed unit/building, remove it
+        if(payloadTarget instanceof Healthc h && !h.isValid()){
+            payloadTarget = null;
+        }
+
+        if(payloadTarget != null && unit instanceof Payloadc pay){
+            targetPos.set(payloadTarget);
+            attractDst = 0f;
+
+            if(unit.within(payloadTarget, 3f * Time.delta)){
+                if(payloadTarget instanceof Vec2 && pay.hasPayload()){
+                    //vec -> dropping something
+                    tryDropPayload();
+                }else if(payloadTarget instanceof Building build && build.team == unit.team){
+                    //building -> picking building up
+                    Call.requestBuildPayload(player, build);
+                }else if(payloadTarget instanceof Unit other && pay.canPickup(other)){
+                    //unit -> picking unit up
+                    Call.requestUnitPayload(player, other);
+                }
+
+                payloadTarget = null;
+            }
+        }else{
+            payloadTarget = null;
+        }
+
+        movement.set(targetPos).sub(player).limit(speed);
+        movement.setAngle(Mathf.slerp(movement.angle(), unit.vel.angle(), 0.05f));
+
+        if(player.within(targetPos, attractDst)){
+            movement.setZero();
+            unit.vel.approachDelta(Vec2.ZERO, unit.speed() * type.accel / 2f);
+        }
+
+        unit.hitbox(rect);
+        rect.grow(4f);
+
+        player.boosting = collisions.overlapsTile(rect, EntityCollisions::solid) || !unit.within(targetPos, 85f);
+
+        unit.movePref(movement);
+
+        //update shooting if not building + not mining
+        if(!player.unit().activelyBuilding() && player.unit().mineTile == null){
+            mouseAngle = Angles.mouseAngle(unit.x, unit.y);
+            aimCursor = omni && player.shooting && unit.type.hasWeapons() && (unit.type.faceTarget && !boosted);
+
+            //autofire targeting
+            if(aimCursor){
+                unit.lookAt(mouseAngle);
+                player.shooting = true;
+                unit.aim(player.mouseX = Core.input.mouseWorldX(), player.mouseY = Core.input.mouseWorldY());
+            }else if(target == null){
+                player.shooting = false;
+                if(Core.settings.getBool("autotarget") && !(player.unit() instanceof BlockUnitUnit u && u.tile() instanceof ControlBlock c && !c.shouldAutoTarget())){
+                    if(player.unit().type.canAttack){
+                        target = Units.closestTarget(unit.team, unit.x, unit.y, range, u -> u.checkTarget(type.targetAir, type.targetGround), u -> type.targetGround);
+                    }
+
+                    if(allowHealing && target == null){
+                        target = Geometry.findClosest(unit.x, unit.y, indexer.getDamaged(Team.sharded));
+                        if(target != null && !unit.within(target, range)){
+                            target = null;
+                        }
+                    }
+                }
+
+                //when not shooting, aim at mouse cursor
+                //this may be a bad idea, aiming for a point far in front could work better, test it out
+                unit.aim(Core.input.mouseWorldX(), Core.input.mouseWorldY());
+            }else{
+                Vec2 intercept = Predict.intercept(unit, target, bulletSpeed);
+
+                player.mouseX = intercept.x;
+                player.mouseY = intercept.y;
+                player.shooting = !boosted;
+
+                unit.aim(player.mouseX, player.mouseY);
+            }
+        }
+        unit.controlWeapons(player.shooting && !boosted);
+    }
+    void checkTargets(float x, float y){
+        Unit unit = Units.closestEnemy(player.team(), x, y, 20f, u -> !u.dead);
+
+        if(unit != null && player.unit().type.canAttack){
+            player.unit().mineTile = null;
+            target = unit;
+        }else{
+            Building tile = world.buildWorld(x, y);
+
+            if((tile != null && player.team().isEnemy(tile.team) && (tile.team != Team.derelict || state.rules.coreCapture)) || (tile != null && player.unit().type.canHeal && tile.team == player.team() && tile.damaged())){
+                player.unit().mineTile = null;
+                target = tile;
+            }
+        }
+    }
     private boolean isBuildingIgnoreNetworking() {
         return player.unit().plans.size != 0 && !BuildPlanCommunicationSystem.INSTANCE.isNetworking(player.unit().plans.last());
     }

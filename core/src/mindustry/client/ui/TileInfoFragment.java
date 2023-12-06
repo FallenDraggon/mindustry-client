@@ -21,7 +21,7 @@ public class TileInfoFragment extends Table {
         Image img = new Image();
         add(img).size(63).padRight(6);
         Label label = new Label("");
-        add(label).height(126);
+        add(label).height(56);
         visible(() -> Core.settings.getBool("tilehud"));
         AtomicInteger lastPos = new AtomicInteger();
         var builder = new StringBuilder();
@@ -44,7 +44,7 @@ public class TileInfoFragment extends Table {
             img.setDrawable(icon.found() ? icon : hovered.floor().uiIcon);
             var record = TileRecords.INSTANCE.get(hovered);
             if (record == null) return;
-            var logs = record.lastLogs(7);
+            var logs = record.lastLogs(3);
 
             builder.setLength(0);
             for (var item : logs) builder.append(item.toShortString()).append(" (").append(UI.formatMinutesFromMillis(Time.timeSinceMillis(item.getTime().toEpochMilli()))).append(")\n");

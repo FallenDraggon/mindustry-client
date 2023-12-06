@@ -203,6 +203,7 @@ class ClientLogic {
             if (block !is Turret) return@on
             if (event.unit?.player == null) return@on
             if (state.rules.infiniteResources) return@on
+            if (settings.getBool("ignorevoidalarm")) return@on
 
             clientThread.post { // Scanning through tiles can be exhaustive. Delegate it to the client thread.
                 val voids = Seq<Building>()

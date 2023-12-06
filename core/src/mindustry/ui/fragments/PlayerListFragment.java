@@ -18,6 +18,8 @@ import mindustry.client.antigrief.*;
 import mindustry.client.navigation.*;
 import mindustry.client.utils.*;
 import mindustry.content.*;
+import mindustry.core.ActionsHistory;
+import mindustry.entities.units.BuildPlan;
 import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
@@ -25,6 +27,8 @@ import mindustry.net.*;
 import mindustry.net.Packets.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
+
+import java.util.Iterator;
 
 import static mindustry.Vars.*;
 
@@ -223,8 +227,7 @@ public class PlayerListFragment{
             }else if(!user.isLocal() && !user.admin && net.client() && Groups.player.size() >= 3 && player.team() == user.team()){ //votekick
                 button.add().growY();
 
-                button.button(Icon.hammer, ustyle,
-                () -> {
+                button.button(Icon.hammer, ustyle, () -> {
                     ui.showTextInput("@votekick.reason", Core.bundle.format("votekick.reason.message", user.name()), "", reason -> {
                         Call.sendChatMessage("/votekick #" + user.id() + " " + reason);
                         if(Server.io.b() && (user.trace != null || user.serverID != null))
@@ -233,6 +236,32 @@ public class PlayerListFragment{
                             );
                     });
                 }).size(h/2);
+            }
+            if(Core.settings.getBool("blocksplayersplan")){
+                content.table(info -> {
+
+                    content.button("[#00ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockBuDe(user, false) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, false) : "-") ), () -> {
+                        ClientVars.nameforplans = PlayerBlockListFragment.DeletePrefix(user.name);
+                    }).maxHeight(25).minWidth(80);
+                });
+
+                content.button("[#0000ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockCon(user, true) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, false) : "-") ), () -> {
+                    ClientVars.nameforplans = PlayerBlockListFragment.DeletePrefix(user.name);;
+                }).maxHeight(25).minWidth(80);
+
+                content.button("[#ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockBuDe(user, true) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, true) : "-") ), () -> {
+                    ClientVars.nameforplans = null;
+                }).maxHeight(25).minWidth(80);
+
+                content.button("[#cccccc]" + "fix", () -> {
+                    Iterator<ActionsHistory.BlockPlayerPlan> broken = ActionsHistory.blocksplayersplans.iterator();
+                    while(broken.hasNext()){
+                        ActionsHistory.BlockPlayerPlan plan = broken.next();
+                        if(user.name.equals(plan.lastacs) && plan.wasbreaking) {
+                            player.unit().addBuild(new BuildPlan(plan.x, plan.y, plan.rotation, Vars.content.block(plan.block), plan.config));
+                        }
+                    }
+                }).maxHeight(25).minWidth(50);
             }
             if (user != player) {
                 button.button(Icon.lock, ustyle, // Mute player
