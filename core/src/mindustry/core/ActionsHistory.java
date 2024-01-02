@@ -3,8 +3,12 @@ package mindustry.core;
 import arc.ApplicationListener;
 import arc.graphics.Color;
 import arc.graphics.Colors;
+import arc.input.KeyCode;
+import arc.scene.ui.Dialog;
+import arc.scene.ui.layout.Table;
 import arc.struct.Queue;
 import arc.struct.Seq;
+import arc.util.Align;
 import mindustry.game.Teams;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
@@ -18,12 +22,12 @@ import static arc.util.Strings.stripColors;
 
 public class ActionsHistory extends Logic {
     public static Queue<BlockPlayerPlan> blocksplayersplans = new Queue<>();
-
     public static Queue<ItemPlayerPlan> playeritemsplans = new Queue<>();
     public static Queue<BlockConfigPlayerPlan> blockconfplayersplans = new Queue<>();
     public static Queue<UnitsKilledByPlayers> deathunitsplan = new Queue<>();
     public static Queue<UnitsKilledByControllPlayers> deathunitscontrolplan = new Queue<>();
     public static final Seq<Player> playeratmap = new Seq<>();
+    private static Table reslog = new Table();
 
     public static void clearactionhistory() {
         blocksplayersplans.clear();
@@ -31,6 +35,7 @@ public class ActionsHistory extends Logic {
         deathunitsplan.clear();
         deathunitscontrolplan.clear();
         playeratmap.clear();
+        playeritemsplans.clear();
     }
 
     public static String cuteNickNames(String name) {
@@ -128,11 +133,13 @@ public class ActionsHistory extends Logic {
         public Tile tile;
         public Item item;
         public boolean take;
-        public ItemPlayerPlan(Player player, Tile tile, Item item, boolean take){
+        public LocalTime localTime;
+        public ItemPlayerPlan(Player player, Tile tile, Item item, boolean take, LocalTime localTime){
             this.player = player;
             this.tile = tile;
             this.item = item;
             this.take = take;
+            this.localTime = localTime;
         }
     }
 

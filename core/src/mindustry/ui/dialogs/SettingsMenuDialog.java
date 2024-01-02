@@ -501,6 +501,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("mobilegayming", false);
         client.checkPref("ignorevoidalarm", false);
         client.checkPref("snipermode", false);
+        client.checkPref("resetschetags", false);
 
 
         game.sliderPref("saveinterval", 60, 10, 5 * 120, 10, i -> Core.bundle.format("setting.seconds", i));

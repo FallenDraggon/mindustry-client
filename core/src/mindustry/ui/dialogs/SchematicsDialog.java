@@ -704,6 +704,9 @@ public class SchematicsDialog extends BaseDialog{
 
     @Override
     public Dialog show(){
+        if(Core.settings.getBool("resetschetags")) {
+            selectedTags.clear();
+        }
         super.show();
 
         if(Core.app.isDesktop() && searchField != null){

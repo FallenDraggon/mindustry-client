@@ -150,6 +150,11 @@ public class HudFragment{
                     Call.sendChatMessage("/sync");
                 }).name("sync").tooltip("/sync");
 
+                tt.button(Icon.fileTextSmall, sstyle, () -> {
+                    String message = "!fixcode r";
+                    CommandHandler.CommandResponse response = ClientVars.clientCommandHandler.handleMessage(message, player);
+                }).name("fixcode").tooltip("fixcode");
+
                 tt.button(Icon.powerSmall, sstyle, () -> {
                     String message = "!fixpower c";
                     CommandHandler.CommandResponse response = ClientVars.clientCommandHandler.handleMessage(message, player);

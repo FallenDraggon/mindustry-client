@@ -123,7 +123,7 @@ public class DesktopInput extends InputHandler{
                         if(showingMassDrivers){
                             str.append("\n").append(bundle.format("client.togglemassdrivers", keybinds.get(Binding.show_massdriver_configs).key.toString()));
                         }
-                        if(playersblockplanshow){
+                        if(playersblockplanshow || (ClientVars.nameforplans != null)){
                             str.append("\n").append(bundle.format("client.showplblplan", keybinds.get(Binding.block_show_plans).key.toString()));
                         }
                         if(playersdeathplanshow){
@@ -392,7 +392,10 @@ public class DesktopInput extends InputHandler{
         }
 
         if(input.keyTap(Binding.block_show_plans) && scene.getKeyboardFocus() == null){
-            playersblockplanshow = !playersblockplanshow;
+           if(ClientVars.nameforplans != null) { ClientVars.nameforplans = null;
+           } else {
+               playersblockplanshow = !playersblockplanshow;
+           }
         }
         if(input.keyTap(Binding.death_show_plans) && scene.getKeyboardFocus() == null){
             if (input.shift()) {
@@ -610,6 +613,14 @@ public class DesktopInput extends InputHandler{
                 table.row().fill();
                 table.button("@client.log", () -> { // Tile Logs
                     TileRecords.INSTANCE.show(cursor);
+                    table.remove();
+                });
+
+                table.row().fill();
+
+                table.button("@client.logres", () -> { // Tile res Logs
+                    ResLogDialog.lastreslogtile = cursor;
+                    ui.reslogdialog.toggle();
                     table.remove();
                 });
 

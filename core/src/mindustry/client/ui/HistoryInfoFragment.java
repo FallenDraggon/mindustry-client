@@ -16,7 +16,6 @@ import mindustry.world.Tile;
 
 public class HistoryInfoFragment extends Table{
 
-    private static Table reslog = new Table();
     public HistoryInfoFragment() {
         setBackground(Tex.wavepane);
         Image img = new Image();
@@ -34,26 +33,5 @@ public class HistoryInfoFragment extends Table{
             }
             label.setText(builder.length() == 0 ? "" : builder.substring(0, builder.length() - 1));
         });
-    }
-
-    public static void showreslog(Tile tile){
-        new Dialog("Delivery Logs for (" + tile.x + "/" + tile.y + ")"){{
-            getCell(cont).growX();
-            cont.pane(reslog).scrollX(false);
-
-            for(ActionsHistory.ItemPlayerPlan logitem : ActionsHistory.playeritemsplans) {
-                if(tile.build == logitem.tile.build) {
-                    reslog.table(rl->{
-                        rl.margin(15).add(logitem.player.name + ": " + logitem.item).width(400f).wrap().get().setAlignment(Align.left, Align.left);
-                    });
-                    reslog.row();
-                }
-            }
-
-            row();
-            buttons.button("@ok", this::hide).size(110, 50).pad(4);
-            keyDown(KeyCode.enter, this::hide);
-            closeOnBack();
-        }}.show();
     }
 }

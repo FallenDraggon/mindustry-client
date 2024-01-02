@@ -673,6 +673,8 @@ public class Control implements ApplicationListener, Loadable{
                     ui.listfrag.toggle();
                 }else if(ui.listblockfrag.shown()){
                     ui.listblockfrag.toggle();
+                }else if(ui.reslogdialog.shown()){
+                    ui.reslogdialog.toggle();
                 }else if(ui.findfrag.shown()){
                     ui.findfrag.toggle();
                 }else if(!ui.paused.isShown() && !scene.hasDialog()){

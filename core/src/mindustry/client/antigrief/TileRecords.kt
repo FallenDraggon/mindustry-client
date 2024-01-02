@@ -2,10 +2,12 @@ package mindustry.client.antigrief
 
 import arc.*
 import arc.math.*
+import arc.struct.Queue
 import arc.util.*
 import mindustry.*
 import mindustry.ai.types.*
 import mindustry.client.*
+import mindustry.client.ui.PanelFragment
 import mindustry.client.utils.*
 import mindustry.content.*
 import mindustry.core.ActionsHistory
@@ -13,12 +15,13 @@ import mindustry.game.*
 import mindustry.gen.*
 import mindustry.world.*
 import mindustry.world.blocks.*
+import mindustry.world.blocks.storage.StorageBlock
 import java.time.*
 import kotlin.math.*
 
 object TileRecords {
     private var records: Array<Array<TileRecord>> = arrayOf(arrayOf())
-    var reslogs: Array<Array<TileRecord>> = arrayOf(arrayOf())
+    var reslogs: Array<TileRecord> = arrayOf()
     var history: ArrayList<String> = arrayListOf()
     var joinTime: Instant = Instant.EPOCH
 
@@ -32,9 +35,11 @@ object TileRecords {
             ClientVars.lastServerStartTime = startTime
             ClientVars.lastServerName = Vars.state.map.name()
             if (!ClientVars.syncing && !sameMap) {
-                records = Array(Vars.world.width()) { x -> Array(Vars.world.height()) { y -> TileRecord(x, y) } }
-                joinTime = Instant.now()
-                ActionsHistory.clearactionhistory()
+                if(!PanelFragment.forcesavelogs) {
+                    records = Array(Vars.world.width()) { x -> Array(Vars.world.height()) { y -> TileRecord(x, y) } }
+                    joinTime = Instant.now()
+                    ActionsHistory.clearactionhistory()
+                }
             }
         }
 
@@ -123,6 +128,16 @@ object TileRecords {
                 addLog(tile, CommandTileLog(tile, it.player.toInteractor(), it.building.block, it.position))
             }
         }
+
+        Events.on(EventType.DepositEvent::class.java) {
+            if(!Core.settings.getBool("itemslog")) return@on
+            //it.tile.tile.getLinkedTilesAs(it.tile.tile.build.block) { tile ->addLog(tile, DepositTileLog(tile, it.player.toInteractor(), it.item, it.amount, it.tile.tile.build))}
+        }
+
+        Events.on(EventType.WithdrawEvent::class.java) {
+            if(!Core.settings.getBool("itemslog")) return@on
+            //it.tile.tile.getLinkedTilesAs(it.tile.tile.build.block) { tile ->addLog(tile, WithdrawTileLog(tile, it.player.toInteractor(), it.item, it.amount, it.tile.tile.build))}
+        }
     }
 
     operator fun get(x: Int, y: Int): TileRecord? = records.getOrNull(x)?.getOrNull(y)
@@ -133,6 +148,7 @@ object TileRecords {
         val logs = this[tile] ?: return
         logs.add(log, tile)
     }
+
     private fun addLogH(log: TileLog) {
         addHistoryLog(log)
     }

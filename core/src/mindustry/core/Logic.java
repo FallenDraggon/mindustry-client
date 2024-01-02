@@ -16,6 +16,7 @@ import mindustry.maps.*;
 import mindustry.type.*;
 import mindustry.type.Weather.*;
 import mindustry.ui.fragments.ChatFragment;
+import mindustry.ui.fragments.ResLogDialog;
 import mindustry.world.*;
 import mindustry.world.blocks.storage.CoreBlock.*;
 import mindustry.content.Blocks;
@@ -260,6 +261,21 @@ public class Logic implements ApplicationListener{
                 if (it.tile.block == null || it.player == null) return;
                 //state.teams.get(player.team()).blockconfplayersplans.addFirst(new BlockConfigPlayerPlan((int)it.tile.x/8, (int)it.tile.y/8, it.tile.block.id, it.player.name));
                 ActionsHistory.blockconfplayersplans.addFirst(new ActionsHistory.BlockConfigPlayerPlan((int)it.tile.x/8, (int)it.tile.y/8, it.tile.block.id, it.player.name));
+            }
+        });
+
+        Events.on(DepositEvent.class, it -> { // Recording items deposit
+            if(Core.settings.getBool("itemslog")) {
+                if (it.tile.block == null || it.player == null) return;
+                LocalTime tempct = LocalTime.now();
+                ActionsHistory.playeritemsplans.addFirst(new ActionsHistory.ItemPlayerPlan(it.player, it.tile.tile, it.item, false, tempct));
+            }
+        });
+        Events.on(WithdrawEvent.class, it -> { // Recording items withdraw
+            if(Core.settings.getBool("itemslog")) {
+                if (it.tile.block == null || it.player == null) return;
+                LocalTime tempct = LocalTime.now();
+                ActionsHistory.playeritemsplans.addFirst(new ActionsHistory.ItemPlayerPlan(it.player, it.tile.tile, it.item, true, tempct));
             }
         });
 

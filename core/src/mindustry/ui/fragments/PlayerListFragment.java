@@ -242,16 +242,16 @@ public class PlayerListFragment{
 
                     content.button("[#00ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockBuDe(user, false) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, false) : "-") ), () -> {
                         ClientVars.nameforplans = PlayerBlockListFragment.DeletePrefix(user.name);
-                    }).maxHeight(25).minWidth(80);
+                    }).maxHeight(25).minWidth(80).tooltip("Show player builds");
                 });
 
                 content.button("[#0000ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockCon(user, true) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, false) : "-") ), () -> {
                     ClientVars.nameforplans = PlayerBlockListFragment.DeletePrefix(user.name);;
-                }).maxHeight(25).minWidth(80);
+                }).maxHeight(25).minWidth(80).tooltip("Show player builds");
 
                 content.button("[#ff]" + (Core.settings.getBool("blocksplayersplancount") ? PlayerBlockListFragment.BlockBuDe(user, true) : (Core.input.shift() ? PlayerBlockListFragment.BlockBuDe(user, true) : "-") ), () -> {
                     ClientVars.nameforplans = null;
-                }).maxHeight(25).minWidth(80);
+                }).maxHeight(25).minWidth(80).tooltip("Hide player builds");
 
                 content.button("[#cccccc]" + "fix", () -> {
                     Iterator<ActionsHistory.BlockPlayerPlan> broken = ActionsHistory.blocksplayersplans.iterator();
@@ -261,7 +261,7 @@ public class PlayerListFragment{
                             player.unit().addBuild(new BuildPlan(plan.x, plan.y, plan.rotation, Vars.content.block(plan.block), plan.config));
                         }
                     }
-                }).maxHeight(25).minWidth(50);
+                }).maxHeight(25).minWidth(50).tooltip("Fix player builds broken");
             }
             if (user != player) {
                 button.button(Icon.lock, ustyle, // Mute player

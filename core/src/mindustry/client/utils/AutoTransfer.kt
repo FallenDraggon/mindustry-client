@@ -4,6 +4,7 @@ import arc.*
 import arc.math.*
 import arc.struct.*
 import arc.util.*
+import mindustry.Vars
 import mindustry.Vars.*
 import mindustry.client.ClientVars.*
 import mindustry.client.navigation.*
@@ -22,6 +23,7 @@ import mindustry.world.blocks.production.GenericCrafter.*
 import mindustry.world.blocks.storage.*
 import mindustry.world.blocks.units.Reconstructor
 import mindustry.world.blocks.units.UnitFactory
+import mindustry.world.blocks.power.*
 import mindustry.world.consumers.*
 import kotlin.math.*
 
@@ -104,7 +106,8 @@ class AutoTransfer {
         //builds.retainAll { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) }.sort { b -> -b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
         builds.retainAll { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && player.within(it, itemTransferRange) }
         builds.retainAll { it !is NuclearReactorBuild}
-        if(Core.settings.getBool("onlyYFAT")) builds.filter { it is Reconstructor.ReconstructorBuild || it is UnitFactory.UnitFactoryBuild }
+        if(Core.settings.getBool("onlyYFAT")) builds.retainAll { it is Reconstructor.ReconstructorBuild || it is UnitFactory.UnitFactoryBuild }
+        if(Core.settings.getBool("onlyICE")) builds.retainAll { it is ConsumeGenerator.ConsumeGeneratorBuild }
         if(Core.settings.getBool("noHeAT")) builds.filter { it !is MendProjector.MendBuild }
         if(Core.settings.getBool("noOvAT")) builds.filter { it !is OverdriveProjector.OverdriveBuild }
         if(Core.settings.getBool("noShAT")) builds.filter { it !is ForceProjector.ForceBuild }

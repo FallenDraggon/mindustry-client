@@ -4,6 +4,7 @@ import arc.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.game.EventType.*;
+import mindustry.ui.fragments.ResLogDialog;
 
 import java.util.concurrent.*;
 
@@ -67,7 +68,6 @@ public class AsyncCore{
     public void end(){
         if(state.isPlaying()){
             complete();
-
             //sync end (flush data)
             for(AsyncProcess p : processes){
                 p.end();

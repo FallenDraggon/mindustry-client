@@ -12,6 +12,7 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.client.ClientVars;
 import mindustry.client.utils.AutoTransfer;
+import mindustry.content.Items;
 import mindustry.content.UnitTypes;
 import mindustry.ctype.*;
 import mindustry.gen.*;
@@ -254,6 +255,8 @@ public class TrashDialog extends BaseDialog {
         }).left();
         all.row();
 
+        all.check("@setting.onlyICE", Core.settings.getBool("onlyICE"), i -> Core.settings.put("onlyICE", !Core.settings.getBool("onlyICE"))).left();
+        all.row();
         all.check("@setting.onlyYFAT", Core.settings.getBool("onlyYFAT"), i -> Core.settings.put("onlyYFAT", !Core.settings.getBool("onlyYFAT"))).left();
         all.row();
         all.check("@setting.noHeAT", Core.settings.getBool("noHeAT"), i -> Core.settings.put("noHeAT", !Core.settings.getBool("noHeAT"))).left();

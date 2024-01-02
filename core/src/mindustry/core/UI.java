@@ -55,6 +55,7 @@ public class UI implements ApplicationListener, Loadable{
     public PanelFragment panelfragment;
     public PlayerBlockListFragment listblockfrag;
     public FDFindFragment findfrag;
+   public ResLogDialog reslogdialog;
     public TrashDialog trashbase;
 
     public WidgetGroup menuGroup, hudGroup;
@@ -198,6 +199,7 @@ public class UI implements ApplicationListener, Loadable{
         listblockfrag = new PlayerBlockListFragment();
         trashbase = new TrashDialog();
         findfrag = new FDFindFragment();
+        reslogdialog = new ResLogDialog();
 
         picker = new ColorPicker();
         effects = new EffectsDialog();
@@ -255,6 +257,7 @@ public class UI implements ApplicationListener, Loadable{
         loadfrag.build(group);
         panelfragment.build(hudGroup);
         listblockfrag.build(hudGroup);
+        reslogdialog.build(hudGroup);
         findfrag.build(hudGroup);
 
         new FadeInFragment().build(group);

@@ -13,6 +13,7 @@ import arc.scene.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
+import arc.util.Timer;
 import arc.util.pooling.Pools;
 import mindustry.*;
 import mindustry.client.navigation.BuildPath;
@@ -22,6 +23,7 @@ import mindustry.client.navigation.RepairPath;
 import mindustry.client.utils.AutoTransfer;
 import mindustry.content.*;
 import mindustry.core.NetClient;
+import mindustry.entities.Effect;
 import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.gen.*;
@@ -61,6 +63,7 @@ public class PanelFragment extends InputHandler{
     public static boolean needhealmode  = false;
     public static int currentfollowmode = 0; // 1 - mine, 2 - build, 3 - heal
     public static int prevfollowmode = 0;
+    public static boolean forcesavelogs = false;
 
     public PanelFragment(){ //Основной класс
 
@@ -451,6 +454,11 @@ public class PanelFragment extends InputHandler{
                     Core.settings.put("deserter", !Core.settings.getBool("deserter"));
                 }).update(i -> i.setChecked(Core.settings.getBool("deserter"))).name("deserter").tooltip("Deserter");
 
+                t.button(Icon.saveSmall, sstylet, () -> {
+                    forcesavelogs = !forcesavelogs;
+                }).update(i -> i.setChecked(forcesavelogs)).name("forcesavelogs").tooltip("Save logs then exit or sync");
+
+                //t.button(Icon.exitSmall, sstylet, () -> {                    Core.settings.put("dontrespawn", !Core.settings.getBool("dontrespawn"));                }).update(i -> i.setChecked(Core.settings.getBool("dontrespawn"))).name("dontrespawn").tooltip("dontrespawn");
 
             }).padTop(Core.settings.getInt("yoffssetfdpamel") * 1f);
         });
@@ -487,6 +495,7 @@ public class PanelFragment extends InputHandler{
     }
 
     private void checkvoids() {
+
         String ucont = ":" ;
         for(Tile tile : world.tiles) {
             if (tile.block() instanceof PowerVoid) {
@@ -506,7 +515,6 @@ public class PanelFragment extends InputHandler{
                 NetClient.findCoords(msg);
             }
         }
-
     }
     private void checksources() {
         for(Team cteam : Team.all) {

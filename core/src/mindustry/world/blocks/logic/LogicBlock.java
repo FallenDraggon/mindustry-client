@@ -688,21 +688,20 @@ public class LogicBlock extends Block{
                 Core.app.setClipboardText(this.code);
             }).tooltip("@schematic.copy").size(40);
             table.row();
+            table.button(Icon.trash, Styles.cleari, () -> {
+                if(Core.input.shift()) removeCode();
+                else ui.showConfirm("@confirm", "Are you sure you want to delete this processor's code?", this::removeCode);
+            }).size(40).tooltip("Remove code").disabled(b -> !ClientVars.configs.isEmpty());
+            table.button(Icon.eyeOff, Styles.cleari, () -> {
+                if(Core.input.shift()) removeLinks();
+                else ui.showConfirm("@confirm", "Are you sure you want to remove all links?", this::removeLinks);
+            }).size(40).tooltip("Remove all links").disabled(b -> !ClientVars.configs.isEmpty());
             table.button(Icon.download, Styles.cleari, () ->{
                 String configcode = Core.app.getClipboardText().replace("\r\n", "\n");
                 this.code = configcode;
                 this.updateCode(configcode);
                 Call.tileConfig(Vars.player, this, this.config());
             }).tooltip("@schematic.copy.import").size(40);
-            table.button(Icon.trash, Styles.cleari, () -> {
-                if(Core.input.shift()) removeCode();
-                else ui.showConfirm("@confirm", "Are you sure you want to delete this processor's code?", this::removeCode);
-            }).size(40).tooltip("Remove code").disabled(b -> !ClientVars.configs.isEmpty());
-
-            table.button(Icon.eyeOff, Styles.cleari, () -> {
-                if(Core.input.shift()) removeLinks();
-                else ui.showConfirm("@confirm", "Are you sure you want to remove all links?", this::removeLinks);
-            }).size(40).tooltip("Remove all links").disabled(b -> !ClientVars.configs.isEmpty());
         }
 
         @Override
